@@ -1,0 +1,81 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum CourseCategory {
+  PROGRAMMING
+  DESIGN
+  MARKETING
+  BUSINESS
+  DATA_SCIENCE
+  LANGUAGE
+}
+
+model User {
+  id        Int          @id @default(autoincrement())
+  name      String
+  username  String       @unique
+  email     String       @unique
+  password  String
+  passwordconfirm String
+  isActive  Boolean      @default(false)
+  activatinoToken String?
+  profile   UserProfile?
+  profileId Int?
+  courses   Course[]     @relation("CreatedCourses")
+  purchases Purchase[]
+  reviews   Review[]
+}
+
+model UserProfile {
+  id        Int      @id @default(autoincrement())
+  bio       String?
+  avatarUrl String?
+  address   String?
+  userId    Int      @unique
+  user      User @relation(fields: [userId], references: [id])
+}
+
+model Course {
+  id          Int             @id @default(autoincrement())
+  title       String
+  description String
+  imageUrl    String
+  price       Int
+  discount    Int?
+  category    CourseCategory
+  creatorId   Int
+  creator     User            @relation("CreatedCourses", fields: [creatorId], references: [id])
+  purchases   Purchase[]
+  reviews     Review[]
+  createdAt   DateTime        @default(now())
+}
+
+
+model Purchase {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  courseId  Int
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  rating    Int
+  comment   String
+  userId    Int
+  courseId  Int
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
