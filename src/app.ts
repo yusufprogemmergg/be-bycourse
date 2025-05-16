@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
 import orderRoutes from './routes/courseRoutes';
@@ -18,8 +18,8 @@ app.use(bodyParser.json());
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.get("/", (req, res) => {
-    res.send("API is running...");
+app.get('/', (req: Request, res: Response) => {
+    res.send('Hello from Express API on Vercel!');
   });
 
 // Routes
