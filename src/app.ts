@@ -26,6 +26,7 @@ app.get('/', (req: Request, res: Response) => {
     res.json({ message: 'Test route works!' });
   });
 
+  console.log("DATABASE_URL", process.env.DATABASE_URL);
 // Routes
 app.use('/order', orderRoutes);
 app.use('/auth', authRoutes); // <-- tambahkan ini
