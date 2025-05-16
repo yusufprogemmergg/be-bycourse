@@ -18,6 +18,10 @@ app.use(bodyParser.json());
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+app.get("/", (req, res) => {
+    res.send("API is running...");
+  });
+
 // Routes
 app.use('/order', orderRoutes);
 app.use('/auth', authRoutes); // <-- tambahkan ini
