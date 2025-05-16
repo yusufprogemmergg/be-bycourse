@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.post('/register', register);
 router.post('/login', login);
-router.get('/api/activate/:token', activateUser);
+router.get('/activate/:token', activateUser);
 
 export default router;

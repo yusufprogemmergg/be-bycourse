@@ -1,5 +1,5 @@
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -17,17 +17,17 @@ enum CourseCategory {
 }
 
 model User {
-  id        Int          @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String
-  username  String       @unique
-  email     String       @unique
-  password  String
-  passwordconfirm String
-  isActive  Boolean      @default(false)
-  activatinoToken String?
+  username  String   @unique
+  email     String   @unique
+  password  String?  // opsional untuk user Google
+  googleId  String?  @unique
+  isActive  Boolean  @default(false)
+  activationToken String?
   profile   UserProfile?
   profileId Int?
-  courses   Course[]     @relation("CreatedCourses")
+  courses   Course[] @relation("CreatedCourses")
   purchases Purchase[]
   reviews   Review[]
 }

@@ -7,17 +7,20 @@ import profileRoutes from './routes/profileRoute';
 import reviewRoutes from './routes/reviewRoutes';
 import course from './routes/courseRoutes';
 import purchase from './routes/purchaseRoutes';
+import bodyParser from "body-parser";
+
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(bodyParser.json());
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/order', orderRoutes);
-app.use('/', authRoutes); // <-- tambahkan ini
+app.use('/auth', authRoutes); // <-- tambahkan ini
 app.use('/course', course); // <-- tambahkan ini
 app.use('/api/menu', profileRoutes);
 app.use('/review', reviewRoutes);

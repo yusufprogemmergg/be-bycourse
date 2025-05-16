@@ -8,17 +8,19 @@ interface SendEmailOptions {
 
 export const sendEmail = async ({ to, subject, html }: SendEmailOptions) => {
   const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_SMTP_HOST,
-    port: parseInt(process.env.EMAIL_SMTP_PORT || '465'),
-    secure: process.env.EMAIL_SMTP_SECURE === 'true', // true untuk port 465
+    service: 'Zoho',
+    host: 'smtp.zoho.com',
+    port: 587,
+    secure: false,
     auth: {
-      user: process.env.EMAIL_SMTP_USER,
-      pass: process.env.EMAIL_SMTP_PASS,
+      user: "yusuf_prasetiyo@zohomail.com",
+      pass: "vCi5uz981X1H",
     },
+    requireTLS: true,
   });
 
   await transporter.sendMail({
-    from: `"Your App Name" <${process.env.EMAIL_SMTP_USER}>`,
+    from: `"bycourse" <${process.env.EMAIL_SMTP_USER}>`,
     to,
     subject,
     html,
