@@ -47,7 +47,7 @@ export const register = async (req: Request, res: Response) => {
       });
   
       // Kirim activation link
-      const activationLink = `${process.env.BASE_URL || 'http://localhost:8000'}/auth/activate/${activationToken}`;
+      const activationLink = `${process.env.BASE_URL}/auth/activate/${activationToken}`;
       await sendEmail({
         to: email,
         subject: 'Activate Your Account',

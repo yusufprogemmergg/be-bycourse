@@ -22,6 +22,10 @@ app.get('/', (req: Request, res: Response) => {
     res.send('Hello from Express API on Vercel!');
   });
 
+  app.get('/test', (req, res) => {
+    res.json({ message: 'Test route works!' });
+  });
+
 // Routes
 app.use('/order', orderRoutes);
 app.use('/auth', authRoutes); // <-- tambahkan ini
