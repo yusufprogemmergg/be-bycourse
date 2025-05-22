@@ -34,9 +34,16 @@ model User {
 
 model UserProfile {
   id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String?
   bio       String?
-  avatarUrl String?
-  address   String?
+  avatar    String?
+  website   String?
+  github    String?
+  linkedin  String?
+  twitter   String?
+  youtube   String?
   userId    Int      @unique
   user      User @relation(fields: [userId], references: [id])
 }
