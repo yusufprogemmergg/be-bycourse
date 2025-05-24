@@ -9,7 +9,6 @@ export const createProfile = async (req: Request, res: Response) => {
     email,
     phone,
     bio,
-    avatar,
     website,
     github,
     linkedin,
@@ -18,8 +17,12 @@ export const createProfile = async (req: Request, res: Response) => {
   } = req.body;
   const userId = req.user?.id;
 
+  // File hasil upload dari multer
+  const file = req.file;
+  const avatar = file?.filename ? `uploads/avatars/${file.filename}` : null;
+
   if (!name || !email) {
-    return res.status(400).json({ message: 'Name dan email wajib diisi' });
+    res.status(400).json({ message: 'Name dan email wajib diisi' });
   }
 
   try {
@@ -28,7 +31,7 @@ export const createProfile = async (req: Request, res: Response) => {
     });
 
     if (existingProfile) {
-      return res.status(400).json({ message: 'Profile already exists' });
+      res.status(400).json({ message: 'Profile already exists' });
     }
 
     const profile = await prisma.userProfile.create({
@@ -49,12 +52,13 @@ export const createProfile = async (req: Request, res: Response) => {
       },
     });
 
-    return res.status(201).json({ message: 'Profile created', profile });
+    res.status(201).json({ message: 'Profile created', profile });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 // Update profile user
 export const updateProfile = async (req: Request, res: Response) => {
@@ -63,21 +67,23 @@ export const updateProfile = async (req: Request, res: Response) => {
     email,
     phone,
     bio,
-    avatar,
     website,
     github,
     linkedin,
     twitter,
     youtube,
-    address,
   } = req.body;
+
   const userId = req.user?.id;
+  const file = req.file;
+  const avatarPath = file?.filename ? `uploads/avatars/${file.filename}` : undefined;
 
   try {
     const existingProfile = await prisma.userProfile.findUnique({ where: { userId } });
 
     if (!existingProfile) {
-      return res.status(404).json({ message: 'Profile not found' });
+      res.status(404).json({ message: 'Profile not found' });
+      return;
     }
 
     const profile = await prisma.userProfile.update({
@@ -87,7 +93,7 @@ export const updateProfile = async (req: Request, res: Response) => {
         email,
         phone,
         bio,
-        avatar,
+        avatar: avatarPath || existingProfile.avatar, // pakai avatar baru jika ada, jika tidak tetap pakai lama
         website,
         github,
         linkedin,
@@ -96,12 +102,13 @@ export const updateProfile = async (req: Request, res: Response) => {
       },
     });
 
-    return res.status(200).json({ message: 'Profile updated', profile });
+    res.status(200).json({ message: 'Profile updated', profile });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 export const getProfile = async (req: Request, res: Response) => {
   const userId = req.user?.id;

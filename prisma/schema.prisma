@@ -37,8 +37,8 @@ model UserProfile {
   name      String
   email     String
   phone     String?
-  bio       String?
-  avatar    String?
+  bio       String
+  avatar    String
   website   String?
   github    String?
   linkedin  String?
