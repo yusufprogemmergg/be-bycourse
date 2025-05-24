@@ -31,7 +31,7 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/order', orderRoutes);
 app.use('/auth', authRoutes); // <-- tambahkan ini
 app.use('/course', course); // <-- tambahkan ini
-app.use('/api/menu', profileRoutes);
+app.use('/profile', profileRoutes);
 app.use('/review', reviewRoutes);
 app.use('/purchase', purchase);
 
