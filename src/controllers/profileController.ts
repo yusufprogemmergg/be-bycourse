@@ -1,25 +1,21 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import supabase from '../utils/supabaseClient';
+import path from 'path';
+import fs from 'fs';
 
 const prisma = new PrismaClient();
 
+
+
 export const createProfile = async (req: Request, res: Response) => {
   const {
-    name,
-    email,
-    phone,
-    bio,
-    website,
-    github,
-    linkedin,
-    twitter,
-    youtube,
+    name, email, phone, bio,
+    website, github, linkedin, twitter, youtube,
   } = req.body;
   const userId = req.user?.id;
 
-  // File hasil upload dari multer
   const file = req.file;
-  const avatar = file?.filename ? `uploads/avatars/${file.filename}` : null;
 
   if (!name || !email) {
     res.status(400).json({ message: 'Name dan email wajib diisi' });
@@ -34,21 +30,43 @@ export const createProfile = async (req: Request, res: Response) => {
       res.status(400).json({ message: 'Profile already exists' });
     }
 
+    let avatarUrl: string | null = null;
+
+    if (file) {
+      const ext = path.extname(file.originalname);
+      const fileName = `avatars/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+
+      // Upload ke Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars') // nama bucket
+        .upload(fileName, fs.readFileSync(file.path), {
+          contentType: file.mimetype,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error(uploadError);
+        res.status(500).json({ message: 'Upload avatar gagal' });
+      }
+
+      // Dapatkan URL-nya
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      avatarUrl = data.publicUrl;
+    }
+
     const profile = await prisma.userProfile.create({
       data: {
         name,
         email,
         phone,
         bio,
-        avatar,
+        avatar: avatarUrl,
         website,
         github,
         linkedin,
         twitter,
         youtube,
-        user: {
-          connect: { id: userId },
-        },
+        user: { connect: { id: userId } },
       },
     });
 
