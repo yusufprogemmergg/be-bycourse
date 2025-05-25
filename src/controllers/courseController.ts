@@ -7,18 +7,12 @@ import supabase from "../utils/supabaseClient"; // Pastikan path benar
 const prisma = new PrismaClient();
 
 export const createCourse = async (req: Request, res: Response) => {
-  const {
-    title,
-    description,
-    price,
-    discount,
-    creatorId,
-    categoryId,
-  } = req.body;
-
+  const { title, description, price, discount, categoryId } = req.body;
   const file = req.file;
 
-  if (!title || !description || !price || !creatorId || !categoryId) {
+  const creatorId = req.user?.id; // ambil dari token
+
+  if (!creatorId || !title || !description || !price || !categoryId) {
     res.status(400).json({ message: "Semua field wajib diisi" });
   }
 
@@ -30,7 +24,7 @@ export const createCourse = async (req: Request, res: Response) => {
       const fileName = `courses/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("courses") // nama bucket storage
+        .from("courses")
         .upload(fileName, fs.readFileSync(file.path), {
           contentType: file.mimetype,
           upsert: true,
@@ -63,6 +57,7 @@ export const createCourse = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
 
 
 
