@@ -227,14 +227,14 @@ export const listOtherCourses = async (req: Request, res: Response) => {
 export const listUserCourses = async (req: Request, res: Response) => {
   const userId = req.user?.id;
 
-  if (!userId) {
-    res.status(401).json({ message: 'Unauthorized' });
+  if (!userId || isNaN(Number(userId))) {
+    res.status(401).json({ message: 'Unauthorized or invalid user ID' });
   }
 
   try {
     const courses = await prisma.course.findMany({
       where: {
-        creatorId: parseInt(userId),
+        creatorId: Number(userId), // aman jika userId memang string
       },
       include: {
         reviews: true,
@@ -248,5 +248,3 @@ export const listUserCourses = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
-
