@@ -141,8 +141,6 @@ export const updateCourse = async (req: Request, res: Response) => {
   }
 };
 
-
-
 // List all Courses (lihat semua course)
 export const listCourses = async (req: Request, res: Response) => {
   try {
@@ -227,7 +225,7 @@ export const listOtherCourses = async (req: Request, res: Response) => {
 
 // List courses yang dibuat oleh user sendiri
 export const listUserCourses = async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+  const userId = req.user?.id;
 
   if (!userId) {
     res.status(401).json({ message: 'Unauthorized' });
