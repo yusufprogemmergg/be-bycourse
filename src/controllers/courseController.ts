@@ -234,7 +234,7 @@ export const listUserCourses = async (req: Request, res: Response) => {
   try {
     const courses = await prisma.course.findMany({
       where: {
-        creatorId: userId,
+        creatorId: parseInt(userId),
       },
       include: {
         reviews: true,
