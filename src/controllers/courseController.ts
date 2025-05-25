@@ -9,8 +9,7 @@ const prisma = new PrismaClient();
 export const createCourse = async (req: Request, res: Response) => {
   const { title, description, price, discount, categoryId } = req.body;
   const file = req.file;
-
-  const creatorId = req.user?.id; // ambil dari token
+  const creatorId = req.user?.id;
 
   if (!creatorId || !title || !description || !price || !categoryId) {
     res.status(400).json({ message: "Semua field wajib diisi" });
@@ -51,7 +50,17 @@ export const createCourse = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(201).json({ message: "Course created", course });
+    const finalPrice = course.discount
+      ? Math.round(course.price - (course.price * course.discount / 100))
+      : course.price;
+
+    res.status(201).json({
+      message: "Course created",
+      course: {
+        ...course,
+        finalPrice,
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error });
@@ -83,7 +92,6 @@ export const updateCourse = async (req: Request, res: Response) => {
 
     let imageUrl = existingCourse.image;
 
-    // 📤 Upload file baru jika ada
     if (file) {
       const ext = path.extname(file.originalname);
       const fileName = `courses/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
@@ -116,7 +124,17 @@ export const updateCourse = async (req: Request, res: Response) => {
       },
     });
 
-    res.json({ message: "Course berhasil diupdate", course: updatedCourse });
+    const finalPrice = updatedCourse.discount
+      ? Math.round(updatedCourse.price - (updatedCourse.price * updatedCourse.discount / 100))
+      : updatedCourse.price;
+
+    res.json({
+      message: "Course berhasil diupdate",
+      course: {
+        ...updatedCourse,
+        finalPrice,
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error });
