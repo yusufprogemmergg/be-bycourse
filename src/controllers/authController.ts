@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { sendEmail } from '../libs/email';
+import { profile } from 'console';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
@@ -76,6 +77,7 @@ export const login = async (req: Request, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
       where: { email },
+      include: { profile: true }
     });
 
     if (!user) {
@@ -107,6 +109,7 @@ export const login = async (req: Request, res: Response) => {
         name: user.name,
         username: user.username,
         email: user.email,
+        profile: user.profile,
       },
     });
   } catch (error) {
