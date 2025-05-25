@@ -6,7 +6,7 @@ import { upload } from '../middlewares/upload'; // middleware untuk upload gamba
 const router = express.Router();
 
 router.post('/add', upload.single('avatar'), authenticate, createProfile);
-router.get('/', authenticate, getProfile);
+router.get('/me', authenticate, getProfile);
 router.put('/', authenticate, updateProfile);
 
 export default router;

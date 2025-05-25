@@ -16,7 +16,7 @@ export const sendEmail = async ({ to, subject, html }: SendEmailOptions) => {
       pass: process.env.ZOHO_APP_PASSWORD!, // lebih baik gunakan .env
     },
   });
-
+  
   await transporter.sendMail({
     from: "yusuf_prasetiyo@zohomail.com",
     to,
