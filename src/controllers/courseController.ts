@@ -1,54 +1,69 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import path from "path";
+import fs from "fs";
+import supabase from "../utils/supabaseClient"; // Pastikan path benar
 
 const prisma = new PrismaClient();
 
-// Create Course (user jual course)
 export const createCourse = async (req: Request, res: Response) => {
-  const { title, description, price, category, discount } = req.body;
-  const userId = req.user?.id;
+  const {
+    title,
+    description,
+    price,
+    discount,
+    creatorId,
+    categoryId,
+  } = req.body;
+
   const file = req.file;
 
-  if (!file) {
-    res.status(400).json({ message: 'Image is required' });
-    return;
+  if (!title || !description || !price || !creatorId || !categoryId) {
+    res.status(400).json({ message: "Semua field wajib diisi" });
   }
 
-  const imageUrl = `/uploads/${file.filename}`;
-
-  const originalPrice = Number(price);
-  const discountAmount = discount ? Number(discount) : 0;
-  const discountedPrice = discountAmount > 0
-    ? originalPrice - (originalPrice * discountAmount) / 100
-    : originalPrice;
-
   try {
+    let imageUrl: string | null = null;
+
+    if (file) {
+      const ext = path.extname(file.originalname);
+      const fileName = `courses/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("courses") // nama bucket storage
+        .upload(fileName, fs.readFileSync(file.path), {
+          contentType: file.mimetype,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error(uploadError);
+        res.status(500).json({ message: "Upload gambar gagal" });
+      }
+
+      const { data } = supabase.storage.from("courses").getPublicUrl(fileName);
+      imageUrl = data.publicUrl;
+    }
+
     const course = await prisma.course.create({
       data: {
         title,
         description,
-        imageUrl,
-        price: originalPrice,
-        category,
-        discount: discountAmount,
-        creator: {
-          connect: { id: userId },
-        },
+        price: parseInt(price),
+        discount: discount ? parseInt(discount) : null,
+        creatorId: parseInt(creatorId),
+        categoryId: parseInt(categoryId),
+        image: imageUrl!,
       },
     });
 
-    res.status(201).json({
-      message: 'Course created successfully',
-      course: {
-        ...course,
-        price: discountedPrice,
-      },
-    });
+    res.status(201).json({ message: "Course created", course });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error", error });
   }
 };
+
 
 
 export const updateCourse = async (req: Request, res: Response) => {

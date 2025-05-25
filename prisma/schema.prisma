@@ -7,15 +7,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-enum CourseCategory {
-  PROGRAMMING
-  DESIGN
-  MARKETING
-  BUSINESS
-  DATA_SCIENCE
-  LANGUAGE
-}
-
 model User {
   id        Int      @id @default(autoincrement())
   name      String
@@ -38,7 +29,7 @@ model UserProfile {
   email     String
   phone     String?
   bio       String
-  avatar    String
+  avatar    String?
   website   String?
   github    String?
   linkedin  String?
@@ -49,20 +40,56 @@ model UserProfile {
 }
 
 model Course {
-  id          Int             @id @default(autoincrement())
-  title       String
-  description String
-  imageUrl    String
-  price       Int
-  discount    Int?
-  category    CourseCategory
-  creatorId   Int
-  creator     User            @relation("CreatedCourses", fields: [creatorId], references: [id])
-  purchases   Purchase[]
-  reviews     Review[]
-  createdAt   DateTime        @default(now())
+  id             Int              @id @default(autoincrement())
+  title          String
+  description    String
+  image          String
+  price          Int
+  discount       Int?
+  creatorId      Int
+  creator        User             @relation("CreatedCourses", fields: [creatorId], references: [id])
+  categoryId     Int
+  category       Category         @relation(fields: [categoryId], references: [id])
+  purchases      Purchase[]
+  reviews        Review[]
+  viewStats      CourseViewStat[]
+  modules        Module[]         // Relasi baru
+  createdAt      DateTime         @default(now())
 }
 
+model Module {
+  id        Int      @id @default(autoincrement())
+  title     String
+  courseId  Int
+  course    Course   @relation(fields: [courseId], references: [id])
+  lessons   Lesson[]
+  position  Int      // Urutan modul
+}
+
+model Lesson {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String   // Bisa berupa teks, HTML, atau link ke video
+  moduleId  Int
+  module    Module   @relation(fields: [moduleId], references: [id])
+  position  Int      // Urutan lesson
+}
+
+
+model Category {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+  courses Course[]
+}
+
+model CourseViewStat {
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  views     Int      @default(0)
+  favorites Int      @default(0)
+  enrolls   Int      @default(0)
+  course    Course   @relation(fields: [courseId], references: [id])
+}
 
 model Purchase {
   id        Int      @id @default(autoincrement())
