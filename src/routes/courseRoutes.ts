@@ -9,7 +9,7 @@ router.post('/', authenticate, upload.single('image'), createCourse); // jual co
 router.get('/', listCourses); // lihat semua course
 router.get('/:id', getCourseById); // lihat detail course
 router.get('/other', authenticate, listOtherCourses); // list course orang lain
-router.get('/mine', authenticate, listUserCourses);
+router.get('/me', authenticate, listUserCourses);
 router.put('/:id', authenticate, upload.single('image'), updateCourse); // update course
 
 export default router;
