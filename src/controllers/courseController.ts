@@ -58,52 +58,71 @@ export const createCourse = async (req: Request, res: Response) => {
   }
 };
 
-
-
-
 export const updateCourse = async (req: Request, res: Response) => {
-  const courseId = Number(req.params.id);
-  const { title, description, price, category, discount } = req.body;
-  const userId = req.user?.id;
+  const courseId = parseInt(req.params.id);
+  const { title, description, price, discount, categoryId } = req.body;
+  const file = req.file;
+  const creatorId = req.user?.id;
+
+  if (!creatorId) {
+    res.status(401).json({ message: "Unauthorized" });
+  }
 
   try {
-    const course = await prisma.course.findUnique({ where: { id: courseId } });
+    const existingCourse = await prisma.course.findUnique({
+      where: { id: courseId },
+    });
 
-    if (!course) {
-      res.status(404).json({ message: 'Course not found' });
-      return 
+    if (!existingCourse) {
+      res.status(404).json({ message: "Course tidak ditemukan" });return
     }
 
-    if (course.creatorId !== userId) {
-      res.status(403).json({ message: 'You are not the creator of this course' });
-      return 
+    if (existingCourse.creatorId !== creatorId) {
+      res.status(403).json({ message: "Akses ditolak, bukan pembuat course" });
     }
 
-    // Hitung harga baru setelah diskon (jika diskon ada)
-    const discountAmount = discount ? Number(discount) : 0;
-    const discountedPrice = discountAmount > 0 ? price - (price * discountAmount) / 100 : price;
+    let imageUrl = existingCourse.image;
 
-    // Update course dengan diskon dan data lainnya
+    // 📤 Upload file baru jika ada
+    if (file) {
+      const ext = path.extname(file.originalname);
+      const fileName = `courses/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("courses")
+        .upload(fileName, fs.readFileSync(file.path), {
+          contentType: file.mimetype,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error(uploadError);
+        res.status(500).json({ message: "Upload gambar gagal" });
+      }
+
+      const { data } = supabase.storage.from("courses").getPublicUrl(fileName);
+      imageUrl = data.publicUrl;
+    }
+
     const updatedCourse = await prisma.course.update({
       where: { id: courseId },
-      data: { 
-        title,
-        description,
-        price: Number(price),
-        category,
-        discount: discountAmount,
+      data: {
+        title: title || existingCourse.title,
+        description: description || existingCourse.description,
+        price: price ? parseInt(price) : existingCourse.price,
+        discount: discount ? parseInt(discount) : existingCourse.discount,
+        categoryId: categoryId ? parseInt(categoryId) : existingCourse.categoryId,
+        image: imageUrl,
       },
     });
 
-    res.status(200).json({
-      message: 'Course updated successfully',
-      course: { ...updatedCourse, discountedPrice },
-    });
+    res.json({ message: "Course berhasil diupdate", course: updatedCourse });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error", error });
   }
 };
+
 
 
 // List all Courses (lihat semua course)
