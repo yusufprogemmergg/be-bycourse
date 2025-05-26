@@ -197,6 +197,7 @@ export const getCourseById = async (req: Request, res: Response) => {
 // List courses yang TIDAK dibuat user (buat beli)
 export const getAvailableCourses = async (req: Request, res: Response) => {
   const userId = req.user?.id;
+  console.log("User ID:", userId);
 
   if (!userId) {
     res.status(401).json({ message: "User tidak terautentikasi" });return
