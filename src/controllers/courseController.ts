@@ -225,7 +225,7 @@ export const listOtherCourses = async (req: Request, res: Response) => {
 
 // List courses yang dibuat oleh user sendiri
 export const listUserCourses = async (req: Request, res: Response) => {
-  const userId = req.user?.id;
+  const userId = Number(req.user?.id);
 
   if (!userId) {
     res.status(401).json({ message: 'Unauthorized' });return
@@ -245,7 +245,9 @@ export const listUserCourses = async (req: Request, res: Response) => {
 
     res.status(200).json({ courses });
   } catch (error) {
+    console.log(userId);
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 };
+
