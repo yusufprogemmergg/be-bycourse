@@ -195,33 +195,35 @@ export const getCourseById = async (req: Request, res: Response) => {
 };
 
 // List courses yang TIDAK dibuat user (buat beli)
-export const listOtherCourses = async (req: Request, res: Response) => {
+export const getAvailableCourses = async (req: Request, res: Response) => {
   const userId = req.user?.id;
 
   try {
     const courses = await prisma.course.findMany({
       where: {
         creatorId: {
-          not: userId,
+          not: parseInt(userId),
         },
       },
       include: {
-        creator: {
-          select: { id: true, name: true },
-        },
-        reviews: true,
+        category: true,
       },
-      orderBy: { createdAt: 'desc' },
     });
 
-    res.status(200).json({ courses });
-    return
+    const result = courses.map(course => ({
+      ...course,
+      finalPrice: course.discount
+        ? Math.round(course.price - (course.price * course.discount / 100))
+        : course.price,
+    }));
+
+    res.json(result);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
-    return
+    res.status(500).json({ message: "Gagal mengambil course" });
   }
 };
+
 
 // List courses yang dibuat oleh user sendiri
 export const listUserCourses = async (req: Request, res: Response) => {
