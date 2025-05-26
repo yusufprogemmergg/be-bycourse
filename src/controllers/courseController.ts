@@ -198,6 +198,10 @@ export const getCourseById = async (req: Request, res: Response) => {
 export const getAvailableCourses = async (req: Request, res: Response) => {
   const userId = req.user?.id;
 
+  if (!userId) {
+    res.status(401).json({ message: "User tidak terautentikasi" });return
+  }
+
   try {
     const courses = await prisma.course.findMany({
       where: {
