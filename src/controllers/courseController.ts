@@ -234,14 +234,21 @@ export const listUserCourses = async (req: Request, res: Response) => {
   try {
     const courses = await prisma.course.findMany({
       where: {
-        creatorId: userId, // asumsikan user.id di JWT bertipe number, tidak perlu parseInt lagi
+        creatorId: userId,
       },
       include: {
-        reviews: true,
+        reviews: {
+          include: {
+            user: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+        creator: {
+          select: { id: true, name: true, email: true },
+        },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
 
     res.status(200).json({ courses });
