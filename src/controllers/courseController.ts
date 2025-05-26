@@ -231,30 +231,57 @@ export const getAvailableCourses = async (req: Request, res: Response) => {
 
 
 // List courses yang dibuat oleh user sendiri
-export const listUserCourses = async (req: Request, res: Response) => {
-  const userId = Number(req.user?.id);
-
-  if (!userId) {
-    res.status(401).json({ message: 'Unauthorized' });return
-  }
+export const getMyCourses = async (req: Request, res: Response) => {
+  const userId = req.user?.id;
 
   try {
     const courses = await prisma.course.findMany({
-      where: { creatorId: userId },
-      include: {
-        reviews: true,
-        creator: {
-          select: { id: true, name: true, email: true },
-        },
+      where: {
+        creatorId: parseInt(userId),
       },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        category: true,
+      },
     });
 
-    res.status(200).json({ courses });
+    const result = courses.map(course => ({
+      ...course,
+      finalPrice: course.discount
+        ? Math.round(course.price - (course.price * course.discount / 100))
+        : course.price,
+    }));
+
+    res.json(result);
   } catch (error) {
-    console.log(userId);
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Gagal mengambil course saya" });
+  }
+};
+
+export const getCoursesByCreatorId = async (req: Request, res: Response) => {
+  const { creatorId } = req.params;
+
+  try {
+    const courses = await prisma.course.findMany({
+      where: {
+        creatorId: parseInt(creatorId),
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    const result = courses.map(course => ({
+      ...course,
+      finalPrice: course.discount
+        ? Math.round(course.price - (course.price * course.discount / 100))
+        : course.price,
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Gagal mengambil course dari creator tersebut" });
   }
 };
 
