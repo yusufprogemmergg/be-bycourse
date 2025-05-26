@@ -225,42 +225,28 @@ export const listOtherCourses = async (req: Request, res: Response) => {
 
 // List courses yang dibuat oleh user sendiri
 export const listUserCourses = async (req: Request, res: Response) => {
-  const courseId = req.params.id;
   const userId = req.user?.id;
 
-  if (!userId || isNaN(Number(userId))) {
-     res.status(401).json({ message: 'Unauthorized' });
+  if (!userId) {
+    res.status(401).json({ message: 'Unauthorized' });return
   }
 
   try {
-    const course = await prisma.course.findUnique({
+    const courses = await prisma.course.findMany({
       where: {
-        id: Number(courseId),
+        creatorId: userId, // asumsikan user.id di JWT bertipe number, tidak perlu parseInt lagi
       },
       include: {
-        creator: {
-          select: { id: true, name: true, email: true },
-        },
-        reviews: {
-          include: {
-            user: { select: { id: true, name: true } },
-          },
-        },
+        reviews: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
 
-    if (!course) {
-       res.status(404).json({ message: 'Course not found' });return
-    }
-
-    if (course.creator.id !== Number(userId)) {
-      res.status(403).json({ message: 'Forbidden: You are not the creator of this course' });
-    }
-
-     res.status(200).json({ course });
+    res.status(200).json({ courses });
   } catch (error) {
     console.error(error);
-     res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error' });
   }
 };
-
