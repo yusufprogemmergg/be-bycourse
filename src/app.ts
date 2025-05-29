@@ -8,6 +8,7 @@ import reviewRoutes from './routes/reviewRoutes';
 import course from './routes/courseRoutes';
 import purchase from './routes/purchaseRoutes';
 import categoryRoutes from "./routes/categoryRoute";
+import module from './routes/moduleRoutes';
 import bodyParser from "body-parser";
 
 
@@ -36,5 +37,6 @@ app.use('/profile', profileRoutes);
 app.use('/review', reviewRoutes);
 app.use('/purchase', purchase);
 app.use("/categories", categoryRoutes);
+app.use('/module', module);
 
 export default app;

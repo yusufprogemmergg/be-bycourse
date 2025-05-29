@@ -8,11 +8,11 @@ import { getModulesWithLessons, getLessonById } from "../controllers/moduleContr
 
 const router = express.Router();
 
-router.post("/modules", authenticate, createModule);
-router.post("/lessons", authenticate,upload.single("video"), createLesson);
-router.put("/lessons", authenticate,upload.single("video"), updateLesson);
+router.post("/addmodule", authenticate, createModule);
+router.post("/addlesson", authenticate,upload.single("video"), createLesson);
+router.put("/lesson", authenticate,upload.single("video"), updateLesson);
 router.get("/:courseId/content", authenticate, getCourseContent);
-router.get("/:courseId/modules", authenticate, getModulesWithLessons);
-router.get("/lessons/:id", authenticate, getLessonById);
+router.get("/:courseId/module", authenticate, getModulesWithLessons);
+router.get("/lesson/:id", authenticate, getLessonById);
 
 export default router;
