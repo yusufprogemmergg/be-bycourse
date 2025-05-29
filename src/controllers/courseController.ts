@@ -5,14 +5,13 @@ import fs from "fs";
 import supabase from "../utils/supabaseClient"; // Pastikan path benar
 
 const prisma = new PrismaClient();
-
 export const createCourse = async (req: Request, res: Response) => {
   const { title, description, price, discount, categoryId } = req.body;
   const file = req.file;
   const creatorId = req.user?.id;
 
   if (!creatorId || !title || !description || !price || !categoryId) {
-    res.status(400).json({ message: "Semua field wajib diisi" });
+    return res.status(400).json({ message: "Semua field wajib diisi" });
   }
 
   try {
@@ -30,8 +29,8 @@ export const createCourse = async (req: Request, res: Response) => {
         });
 
       if (uploadError) {
-        console.error(uploadError);
-        res.status(500).json({ message: "Upload gambar gagal" });
+        console.error("Upload error:", uploadError);
+        return res.status(500).json({ message: "Upload gambar gagal" });
       }
 
       const { data } = supabase.storage.from("courses").getPublicUrl(fileName);
@@ -44,9 +43,9 @@ export const createCourse = async (req: Request, res: Response) => {
         description,
         price: parseInt(price),
         discount: discount ? parseInt(discount) : null,
-        creatorId: parseInt(creatorId),
         categoryId: parseInt(categoryId),
-        image: imageUrl!,
+        image: imageUrl ?? "",
+        creatorId: parseInt(creatorId),
       },
     });
 
@@ -54,7 +53,7 @@ export const createCourse = async (req: Request, res: Response) => {
       ? Math.round(course.price - (course.price * course.discount / 100))
       : course.price;
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Course created",
       course: {
         ...course,
@@ -62,10 +61,11 @@ export const createCourse = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error });
+    console.error("Create course error:", error);
+    return res.status(500).json({ message: "Server error", error });
   }
 };
+
 
 export const updateCourse = async (req: Request, res: Response) => {
   const courseId = parseInt(req.params.id);
