@@ -7,37 +7,19 @@ import supabase from "../utils/supabaseClient"; // pastikan ini ada
 
 const prisma = new PrismaClient();    // Pastikan prisma sudah di-setup
 
-export const addLesson = async (req: Request, res: Response) => {
-  const { title, moduleId, position } = req.body;
-  const file = req.file;
 
-  if (!title || !moduleId || !position || !file) {
-    res.status(400).json({ message: "Semua field dan file wajib diisi" });return
+export const addLesson = async (req: Request, res: Response) => {
+  const { title, moduleId, position, content } = req.body;
+
+  if (!title || !moduleId || !position || !content) {
+    res.status(400).json({ message: "Semua field wajib diisi" });return
   }
 
   try {
-    const ext = path.extname(file.originalname);
-    const fileName = `lessons/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("lessons")
-      .upload(fileName, fs.readFileSync(file.path), {
-        contentType: file.mimetype,
-        upsert: true,
-      });
-
-    if (uploadError) {
-      console.error(uploadError);
-        res.status(500).json({ message: "Gagal upload video" });return
-    }
-
-    const { data } = supabase.storage.from("lessons").getPublicUrl(fileName);
-    const publicUrl = data.publicUrl;
-
     const lesson = await prisma.lesson.create({
       data: {
         title,
-        content: publicUrl,
+        content, // ini sudah URL dari Supabase
         moduleId: parseInt(moduleId),
         position: parseInt(position),
       },
@@ -49,6 +31,7 @@ export const addLesson = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 export const updateLesson = async (req: Request, res: Response) => {
