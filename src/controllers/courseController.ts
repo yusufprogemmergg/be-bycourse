@@ -285,3 +285,38 @@ export const getCoursesByCreatorId = async (req: Request, res: Response) => {
   }
 };
 
+// controllers/courseContentController.ts
+export const getCourseContent = async (req: Request, res: Response) => {
+  const courseId = parseInt(req.params.courseId);
+  const userId = req.user?.id;
+
+  try {
+    const isPurchased = await prisma.purchase.findFirst({
+      where: {
+        courseId,
+        userId,
+      },
+    });
+
+    if (!isPurchased) {
+      res.status(403).json({ message: "Akses ditolak. Kamu belum membeli course ini." });return
+    }
+
+    const modules = await prisma.module.findMany({
+      where: { courseId },
+      orderBy: { position: "asc" },
+      include: {
+        lessons: {
+          orderBy: { position: "asc" },
+        },
+      },
+    });
+
+    res.json({ courseId, modules });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+
