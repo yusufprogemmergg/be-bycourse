@@ -1,6 +1,6 @@
 import express from "express";
 import { createModule } from "../controllers/moduleController";
-import { createLesson,updateLesson } from "../controllers/lessonController";
+import { addLesson,updateLesson } from "../controllers/lessonController";
 import { getCourseContent } from "../controllers/courseController";
 import { authenticate } from "../middlewares/authMiddleware";
 import { upload } from "../middlewares/upload"; // middleware for video upload
@@ -9,7 +9,7 @@ import { getModulesWithLessons, getLessonById } from "../controllers/moduleContr
 const router = express.Router();
 
 router.post("/addmodule", authenticate, createModule);
-router.post("/addlesson", authenticate,upload.single("video"), createLesson);
+router.post("/addlesson", authenticate,upload.single("video"), addLesson);
 router.put("/lesson", authenticate,upload.single("video"), updateLesson);
 router.get("/:courseId/content", authenticate, getCourseContent);
 router.get("/:courseId/module", authenticate, getModulesWithLessons);

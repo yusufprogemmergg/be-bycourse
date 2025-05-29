@@ -7,53 +7,46 @@ import supabase from "../utils/supabaseClient"; // pastikan ini ada
 
 const prisma = new PrismaClient();    // Pastikan prisma sudah di-setup
 
-export const createLesson = async (req: Request, res: Response) => {
+export const addLesson = async (req: Request, res: Response) => {
   const { title, moduleId, position } = req.body;
   const file = req.file;
 
-  if (!title || !moduleId || !file) {
-    res.status(400).json({
-      message: "Judul, moduleId, dan video wajib diisi"
-    });return
+  if (!title || !moduleId || !position || !file) {
+    res.status(400).json({ message: "Semua field dan file wajib diisi" });return
   }
 
   try {
     const ext = path.extname(file.originalname);
     const fileName = `lessons/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
 
-    // ⛔ Hati-hati jika file terlalu besar: Supabase limit ~50MB
-    const fileBuffer = fs.readFileSync(file.path);
-
     const { error: uploadError } = await supabase.storage
-      .from("lessons") // Bucket harus sudah dibuat di Supabase
-      .upload(fileName, fileBuffer, {
+      .from("lessons")
+      .upload(fileName, fs.readFileSync(file.path), {
         contentType: file.mimetype,
         upsert: true,
       });
 
     if (uploadError) {
-      console.error("Upload error:", uploadError);
-      res.status(500).json({ message: "Upload video gagal" });
+      console.error(uploadError);
+        res.status(500).json({ message: "Gagal upload video" });return
     }
 
-    // ✅ Ambil public URL dari Supabase
     const { data } = supabase.storage.from("lessons").getPublicUrl(fileName);
-    const videoUrl = data.publicUrl;
+    const publicUrl = data.publicUrl;
 
-    // 🔧 Simpan lesson ke database
     const lesson = await prisma.lesson.create({
       data: {
         title,
-        content: videoUrl, // video URL disimpan di field content
+        content: publicUrl,
         moduleId: parseInt(moduleId),
-        position: position ? parseInt(position) : 0,
+        position: parseInt(position),
       },
     });
 
-    res.status(201).json({ message: "Lesson berhasil dibuat", lesson });
+    res.status(201).json({ message: "Lesson created", lesson });
   } catch (error) {
-    console.error("Server error:", error);
-    res.status(500).json({ message: "Server error", error });
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

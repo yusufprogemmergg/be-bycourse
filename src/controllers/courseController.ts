@@ -11,7 +11,7 @@ export const createCourse = async (req: Request, res: Response) => {
   const creatorId = req.user?.id;
 
   if (!creatorId || !title || !description || !price || !categoryId) {
-    return res.status(400).json({ message: "Semua field wajib diisi" });
+    res.status(400).json({ message: "Semua field wajib diisi" });return
   }
 
   try {
@@ -30,7 +30,7 @@ export const createCourse = async (req: Request, res: Response) => {
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
-        return res.status(500).json({ message: "Upload gambar gagal" });
+        res.status(500).json({ message: "Upload gambar gagal" });return
       }
 
       const { data } = supabase.storage.from("courses").getPublicUrl(fileName);
@@ -53,7 +53,7 @@ export const createCourse = async (req: Request, res: Response) => {
       ? Math.round(course.price - (course.price * course.discount / 100))
       : course.price;
 
-    return res.status(201).json({
+    res.status(201).json({
       message: "Course created",
       course: {
         ...course,
@@ -62,7 +62,7 @@ export const createCourse = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Create course error:", error);
-    return res.status(500).json({ message: "Server error", error });
+    res.status(500).json({ message: "Server error", error });
   }
 };
 
