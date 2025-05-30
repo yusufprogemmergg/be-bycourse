@@ -30,9 +30,15 @@ export const createModule = async (req: Request, res: Response) => {
 export const getModulesWithLessons = async (req: Request, res: Response) => {
   const { courseId } = req.params;
 
+  // Validasi courseId
+  const parsedCourseId = parseInt(courseId);
+  if (isNaN(parsedCourseId)) {
+     res.status(400).json({ message: "Invalid courseId format" });return
+  }
+
   try {
     const modules = await prisma.module.findMany({
-      where: { courseId: parseInt(courseId) },
+      where: { courseId: parsedCourseId },
       orderBy: { position: "asc" },
       include: {
         lessons: {
@@ -43,10 +49,11 @@ export const getModulesWithLessons = async (req: Request, res: Response) => {
 
     res.status(200).json({ message: "Modules loaded", modules });
   } catch (error) {
-    console.error(error);
+    console.error("Error getting modules with lessons:", error);
     res.status(500).json({ message: "Server error", error });
   }
 };
+
 
 // controllers/lessonController.ts
 export const getLessonById = async (req: Request, res: Response) => {
