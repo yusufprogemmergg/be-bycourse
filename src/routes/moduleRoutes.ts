@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.post("/addmodule", authenticate, createModule);
 router.post("/addlesson", authenticate,upload.single("video"), addLesson);
-router.put("/lesson", authenticate,upload.single("video"), updateLesson);
+router.put("/lesson/:id", authenticate,upload.single("video"), updateLesson);
 router.get("/:courseId/content", authenticate, getCourseContent);
 router.get("/module/:courseId", authenticate, getModulesWithLessons);
 router.get("/lesson/:id", authenticate, getLessonById);
