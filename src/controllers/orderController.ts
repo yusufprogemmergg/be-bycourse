@@ -63,6 +63,9 @@ export const createOrder = async (req: Request, res: Response) => {
       credit_card: {
         secure: true,
       },
+      callbacks: {
+      finish: "https://yourdomain.com/thank-you", // <-- GANTI DI SINI
+  },
     });
 
     await prisma.order.update({

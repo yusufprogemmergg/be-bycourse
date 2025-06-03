@@ -72,3 +72,71 @@ export const resetCart = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Gagal mengosongkan cart.' })
   }
 }
+
+export const addToWishlist = async (req: Request, res: Response) => {
+  const { courseId } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const existing = await prisma.wishlist.findFirst({
+      where: { userId, courseId },
+    });
+
+    if (existing) {
+       res.status(400).json({ message: "Course sudah ada di wishlist" });
+       return
+    }
+
+    const wishlistItem = await prisma.wishlist.create({
+      data: { userId, courseId },
+    });
+
+    res.status(201).json({ message: "Berhasil ditambahkan ke wishlist", wishlistItem });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+export const getUserWishlist = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  try {
+    const wishlistItems = await prisma.wishlist.findMany({
+      where: { userId },
+      include: { course: true },
+    });
+
+    res.json({ wishlistItems });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+export const removeFromWishlist = async (req: Request, res: Response) => {
+  const { courseId } = req.params;
+  const userId = req.user.id;
+
+  try {
+    await prisma.wishlist.deleteMany({
+      where: { userId, courseId: parseInt(courseId) },
+    });
+
+    res.json({ message: "Berhasil dihapus dari wishlist" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+export const resetWishlist = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user.id;
+
+    await prisma.wishlist.deleteMany({
+      where: { userId },
+    });
+
+    res.status(200).json({ message: "Wishlist berhasil dikosongkan." });
+  } catch (error) {
+    res.status(500).json({ message: "Gagal mengosongkan wishlist.", error });
+  }
+};
