@@ -12,6 +12,7 @@ import categoryRoutes from "./routes/categoryRoute";
 import module from './routes/moduleRoutes';
 import cartWishlist from './routes/cart&wishlist';
 import midtrans from './routes/midtrans'
+import mycourse from './routes/mycourseRoutes';
 
 import bodyParser from "body-parser";
 
@@ -48,5 +49,6 @@ app.use("/categories", categoryRoutes);
 app.use('/module', module);
 app.use('/cart-wishlist', cartWishlist);
 app.use('/api', midtrans);
+app.use('/mycourse', mycourse);
 
 export default app;

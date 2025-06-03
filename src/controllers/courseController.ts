@@ -353,4 +353,138 @@ export const getCourseContent = async (req: Request, res: Response) => {
   }
 };
 
+// GET /api/my-courses
+export const getMyBoughtCourses = async (req: Request, res: Response) => {
+  const userId = req.user?.id;
 
+  try {
+    const paidOrders = await prisma.order.findMany({
+      where: {
+        userId,
+        status: 'PAID',
+      },
+      include: {
+        orderItems: {
+          include: {
+            course: {
+              include: {
+                category: true,
+                modules: {
+                  include: {
+                    lessons: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const boughtCourses = paidOrders.flatMap(order =>
+      order.orderItems.map(item => {
+        const course = item.course;
+        const finalPrice = course.discount
+          ? course.price - (course.price * course.discount) / 100
+          : course.price;
+
+        return {
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          image: course.image,
+          price: course.price,
+          discount: course.discount,
+          finalPrice,
+          category: course.category,
+          modules: course.modules.map(mod => ({
+            id: mod.id,
+            title: mod.title,
+            position: mod.position,
+            lessons: mod.lessons.map(les => ({
+              id: les.id,
+              title: les.title,
+              content: les.content,
+              position: les.position,
+            })),
+          })),
+        };
+      })
+    );
+
+    res.json(boughtCourses);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengambil course yang telah dibeli' });
+  }
+};
+
+// GET /api/my-courses/:id
+export const getBoughtCourseById = async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const courseId = parseInt(req.params.id);
+
+  try {
+    // Cek apakah user telah membeli course ini dan statusnya PAID
+    const isOwned = await prisma.order.findFirst({
+      where: {
+        userId,
+        status: 'PAID',
+        orderItems: {
+          some: {
+            courseId: courseId,
+          },
+        },
+      },
+    });
+
+    if (!isOwned) {
+      res.status(403).json({ message: 'Kamu belum membeli course ini' });return
+    }
+
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        category: true,
+        modules: {
+          include: {
+            lessons: true,
+          },
+        },
+      },
+    });
+
+    if (!course) {
+      res.status(404).json({ message: 'Course tidak ditemukan' });return
+    }
+
+    const finalPrice = course.discount
+      ? course.price - (course.price * course.discount) / 100
+      : course.price;
+
+    res.json({
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      image: course.image,
+      price: course.price,
+      discount: course.discount,
+      finalPrice,
+      category: course.category,
+      modules: course.modules.map(mod => ({
+        id: mod.id,
+        title: mod.title,
+        position: mod.position,
+        lessons: mod.lessons.map(les => ({
+          id: les.id,
+          title: les.title,
+          content: les.content, // berupa video URL atau teks
+          position: les.position,
+        })),
+      })),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengambil course detail' });
+  }
+};
