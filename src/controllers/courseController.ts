@@ -166,7 +166,7 @@ export const listCourses = async (req: Request, res: Response) => {
 
 export const getCourseById = async (req: Request, res: Response) => {
   const { id } = req.params
-  const userId = req.user.Id // asumsikan middleware JWT menyimpan userId di req
+  const userId = req.user?.Id // asumsikan middleware JWT menyimpan userId di req
 
   try {
     const course = await prisma.course.findUnique({
