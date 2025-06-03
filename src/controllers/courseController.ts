@@ -11,7 +11,7 @@ export const createCourse = async (req: Request, res: Response) => {
   const creatorId = req.user?.id;
 
   if (!creatorId || !title || !description || !price || !categoryId) {
-    res.status(400).json({ message: "Semua field wajib diisi" });return
+    res.status(400).json({ message: "Semua field wajib diisi" }); return
   }
 
   try {
@@ -30,7 +30,7 @@ export const createCourse = async (req: Request, res: Response) => {
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
-        res.status(500).json({ message: "Upload gambar gagal" });return
+        res.status(500).json({ message: "Upload gambar gagal" }); return
       }
 
       const { data } = supabase.storage.from("courses").getPublicUrl(fileName);
@@ -83,7 +83,7 @@ export const updateCourse = async (req: Request, res: Response) => {
     });
 
     if (!existingCourse) {
-      res.status(404).json({ message: "Course tidak ditemukan" });return
+      res.status(404).json({ message: "Course tidak ditemukan" }); return
     }
 
     if (existingCourse.creatorId !== creatorId) {
@@ -200,15 +200,20 @@ export const getCourseById = async (req: Request, res: Response) => {
 
     let isPurchased = false
     if (userId) {
-      const purchase = await prisma.transaction.findFirst({
+      const order = await prisma.order.findFirst({
         where: {
-          courseId: Number(id),
           userId,
           status: 'PAID',
+          orderItems: {
+            some: {
+              courseId: Number(id),
+            },
+          },
         },
       })
-      isPurchased = !!purchase
+      isPurchased = !!order
     }
+
 
     return res.status(200).json({
       ...course,
@@ -226,7 +231,7 @@ export const getAvailableCourses = async (req: Request, res: Response) => {
   console.log("User ID:", userId);
 
   if (!userId) {
-    res.status(401).json({ message: "User tidak terautentikasi" });return
+    res.status(401).json({ message: "User tidak terautentikasi" }); return
   }
 
   try {
@@ -325,7 +330,7 @@ export const getCourseContent = async (req: Request, res: Response) => {
     });
 
     if (!isPurchased) {
-      res.status(403).json({ message: "Akses ditolak. Kamu belum membeli course ini." });return
+      res.status(403).json({ message: "Akses ditolak. Kamu belum membeli course ini." }); return
     }
 
     const modules = await prisma.module.findMany({

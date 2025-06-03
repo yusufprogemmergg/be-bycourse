@@ -7,33 +7,45 @@ const prisma = new PrismaClient();
 
 
 export const createOrder = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user.id; // pastikan JWT sudah menempel
-    const courseIds: number[] = req.body.courseIds;
+  const userId = req.user?.id
+  const { courseIds } = req.body // [1, 2, 3]
 
-    // Ambil data course
+  if (!userId || !Array.isArray(courseIds) || courseIds.length === 0) {
+    res.status(400).json({ message: 'Invalid input' })
+  }
+
+  try {
     const courses = await prisma.course.findMany({
       where: { id: { in: courseIds } },
-    });
+    })
 
-    const totalPrice = courses.reduce((acc, course) => acc + course.price, 0);
+    const totalPrice = courses.reduce((acc, course) => {
+      const finalPrice = course.discount
+        ? course.price - (course.price * course.discount) / 100
+        : course.price
+      return acc + finalPrice
+    }, 0)
 
-    // Simpan Order
     const order = await prisma.order.create({
       data: {
         userId,
         totalPrice,
         orderItems: {
-          create: courses.map((course) => ({
-            courseId: course.id,
-            price: course.price,
-          })),
+          create: courses.map(course => {
+            const finalPrice = course.discount
+              ? course.price - (course.price * course.discount) / 100
+              : course.price
+            return {
+              courseId: course.id,
+              price: finalPrice,
+            }
+          }),
         },
       },
-    });
+      include: { orderItems: true },
+    })
 
-    // Buat Snap Token
-    const parameter = {
+    const midtransPayload = {
       transaction_details: {
         order_id: `ORDER-${order.id}-${Date.now()}`,
         gross_amount: totalPrice,
@@ -41,24 +53,22 @@ export const createOrder = async (req: Request, res: Response) => {
       customer_details: {
         email: req.user.email,
       },
-      item_details: courses.map((course) => ({
-        id: course.id.toString(),
-        price: course.price,
-        quantity: 1,
-        name: course.title,
-      })),
-    };
+      credit_card: { secure: true },
+    }
 
-    const transaction = await snap.createTransaction(parameter);
-    res.json({
+    const midtransResponse = await snap.createTransaction(midtransPayload)
+
+    res.status(201).json({
       message: 'Order created',
-      snapToken: transaction.token,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Gagal membuat order' });
+      orderId: order.id,
+      redirectUrl: midtransResponse.redirect_url,
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Internal server error' })
   }
-};
+}
+
 
 const snap = new midtransClient.Snap({
   isProduction: false,
