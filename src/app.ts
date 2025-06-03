@@ -1,3 +1,4 @@
+import { midtransClient } from 'midtrans-client';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -10,7 +11,7 @@ import purchase from './routes/orderRoutes';
 import categoryRoutes from "./routes/categoryRoute";
 import module from './routes/moduleRoutes';
 import cartWishlist from './routes/cart&wishlist';
-import WebhookRoutes from './routes/midtrans'
+import midtrans from './routes/midtrans'
 
 import bodyParser from "body-parser";
 
@@ -46,6 +47,6 @@ app.use('/order', purchase);
 app.use("/categories", categoryRoutes);
 app.use('/module', module);
 app.use('/cart-wishlist', cartWishlist);
-app.use('/api', WebhookRoutes);
+app.use('/api', midtrans);
 
 export default app;

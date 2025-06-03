@@ -12,19 +12,51 @@ const snap = new midtransClient.Snap({
   serverKey: process.env.MIDTRANS_SERVER_KEY!,
 });
 
+// ============ CREATE ORDER ============
+
 export const createOrder = async (req: Request, res: Response) => {
   const userId = req.user?.id;
   const { courseIds } = req.body;
 
   if (!userId || !Array.isArray(courseIds) || courseIds.length === 0) {
-    res.status(400).json({ message: 'Invalid input' });return
+     res.status(400).json({ message: 'Invalid input' });return
   }
 
   try {
-    const courses = await prisma.course.findMany({
-      where: { id: { in: courseIds } },
+    // 1. Cek course yang sudah dibeli (dari order yang status-nya PAID)
+    const paidOrders = await prisma.order.findMany({
+      where: {
+        userId,
+        status: 'PAID',
+        orderItems: {
+          some: {
+            courseId: { in: courseIds },
+          },
+        },
+      },
+      include: {
+        orderItems: true,
+      },
     });
 
+    const alreadyBoughtCourseIds = new Set(
+      paidOrders.flatMap(order =>
+        order.orderItems.map(item => item.courseId)
+      )
+    );
+
+    const newCourseIds = courseIds.filter(id => !alreadyBoughtCourseIds.has(id));
+
+    if (newCourseIds.length === 0) {
+       res.status(400).json({ message: 'Semua course sudah dibeli' });return
+    }
+
+    // 2. Ambil detail course yang valid
+    const courses = await prisma.course.findMany({
+      where: { id: { in: newCourseIds } },
+    });
+
+    // 3. Hitung total harga
     const totalPrice = courses.reduce((acc, course) => {
       const finalPrice = course.discount
         ? course.price - (course.price * course.discount) / 100
@@ -32,6 +64,7 @@ export const createOrder = async (req: Request, res: Response) => {
       return acc + finalPrice;
     }, 0);
 
+    // 4. Buat order
     const order = await prisma.order.create({
       data: {
         userId,
@@ -50,8 +83,9 @@ export const createOrder = async (req: Request, res: Response) => {
       },
     });
 
-    const midtransOrderId = `ORDER-${order.id}-${Date.now()}`
+    const midtransOrderId = `ORDER-${order.id}-${Date.now()}`;
 
+    // 5. Buat transaksi Midtrans
     const transaction = await snap.createTransaction({
       transaction_details: {
         order_id: midtransOrderId,
@@ -64,10 +98,11 @@ export const createOrder = async (req: Request, res: Response) => {
         secure: true,
       },
       callbacks: {
-      finish: "https://fe-bycourse.vercel.app/success", // <-- GANTI DI SINI
-  },
+        finish: "https://fe-bycourse.vercel.app/success",
+      },
     });
 
+    // 6. Simpan ID transaksi Midtrans
     await prisma.order.update({
       where: { id: order.id },
       data: {
@@ -116,22 +151,11 @@ export const midtransWebhook = async (req: Request, res: Response) => {
     const orderId = parseInt(order_id.split('-')[1]);
 
     if (transaction_status === 'settlement') {
-      await prisma.order.update({ where: { id: orderId }, data: { status: 'PAID' } });
-      const order = await prisma.order.findUnique({
+      // Update order menjadi PAID
+      await prisma.order.update({
         where: { id: orderId },
-        include: { orderItems: true },
+        data: { status: 'PAID' },
       });
-
-      if (order) {
-        for (const item of order.orderItems) {
-          await prisma.purchase.create({
-            data: {
-              userId: order.userId,
-              courseId: item.courseId,
-            },
-          });
-        }
-      }
     }
 
     res.status(200).json({ message: 'Webhook processed' });
