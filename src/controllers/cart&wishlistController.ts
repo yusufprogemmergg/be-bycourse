@@ -142,31 +142,36 @@ export const resetWishlist = async (req: Request, res: Response) => {
 };
 
 export const deleteCartItemById = async (req: Request, res: Response) => {
-  const cartId = parseInt(req.params.id);
-  const userId = req.user.id;
+  const userId = req.user?.id;
+  const cartId = parseInt(req.params.cartId);
+
+  if (!userId) {
+     res.status(401).json({ message: "Unauthorized" });return
+  }
 
   if (isNaN(cartId)) {
-     res.status(400).json({ message: "ID tidak valid." });return
+     res.status(400).json({ message: "ID cart tidak valid" });return
   }
 
   try {
-    const item = await prisma.cart.findUnique({
-      where: { id: cartId },
+    const deleted = await prisma.cart.deleteMany({
+      where: {
+        id: cartId,
+        userId,
+      },
     });
 
-    if (!item || item.userId !== userId) {
-       res.status(404).json({ message: "Item tidak ditemukan." });return
+    if (deleted.count === 0) {
+       res.status(404).json({ message: "Item tidak ditemukan atau bukan milik Anda" });return
     }
 
-    await prisma.cart.delete({
-      where: { id: cartId },
-    });
-
-    res.json({ message: "Item berhasil dihapus dari cart." });
+    res.status(200).json({ message: "Item berhasil dihapus dari cart." });
   } catch (error) {
-    res.status(500).json({ message: "Gagal menghapus item dari cart.", error });
+    console.error("Delete cart error:", error);
+    res.status(500).json({ message: "Gagal menghapus item cart." });
   }
 };
+
 
 
 export const deleteWishlistItemById = async (req: Request, res: Response) => {

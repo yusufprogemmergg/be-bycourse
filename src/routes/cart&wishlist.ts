@@ -13,8 +13,8 @@ router.delete('/reset', authenticate, resetCart);
 router.post("/", addToWishlist);
 router.get("/", getUserWishlist);
 router.delete("/:courseId", removeFromWishlist);
-router.delete("/cart/item/:id", deleteCartItemById);
-router.delete("/wishlist/item/:id", deleteWishlistItemById);
+router.delete("/cart/item/:id",authenticate, deleteCartItemById);
+router.delete("/wishlist/item/:id",authenticate, deleteWishlistItemById);
 
 
 export default router;
