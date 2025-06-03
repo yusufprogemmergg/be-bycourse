@@ -83,8 +83,8 @@ export const addToWishlist = async (req: Request, res: Response) => {
     });
 
     if (existing) {
-       res.status(400).json({ message: "Course sudah ada di wishlist" });
-       return
+      res.status(400).json({ message: "Course sudah ada di wishlist" });
+      return
     }
 
     const wishlistItem = await prisma.wishlist.create({
@@ -138,5 +138,56 @@ export const resetWishlist = async (req: Request, res: Response) => {
     res.status(200).json({ message: "Wishlist berhasil dikosongkan." });
   } catch (error) {
     res.status(500).json({ message: "Gagal mengosongkan wishlist.", error });
+  }
+};
+
+export const deleteCartItemById = async (req: Request, res: Response) => {
+  const cartId = parseInt(req.params.id);
+  const userId = req.user.id;
+
+  if (isNaN(cartId)) {
+     res.status(400).json({ message: "ID tidak valid." });return
+  }
+
+  try {
+    const item = await prisma.cart.findUnique({
+      where: { id: cartId },
+    });
+
+    if (!item || item.userId !== userId) {
+       res.status(404).json({ message: "Item tidak ditemukan." });return
+    }
+
+    await prisma.cart.delete({
+      where: { id: cartId },
+    });
+
+    res.json({ message: "Item berhasil dihapus dari cart." });
+  } catch (error) {
+    res.status(500).json({ message: "Gagal menghapus item dari cart.", error });
+  }
+};
+
+
+export const deleteWishlistItemById = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  try {
+    const item = await prisma.wishlist.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!item || item.userId !== userId) {
+      res.status(404).json({ message: "Item tidak ditemukan atau bukan milikmu" });return
+    }
+
+    await prisma.wishlist.delete({
+      where: { id: parseInt(id) },
+    });
+
+    res.json({ message: "Item berhasil dihapus dari wishlist" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
   }
 };
