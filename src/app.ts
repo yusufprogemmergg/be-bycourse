@@ -10,7 +10,7 @@ import purchase from './routes/orderRoutes';
 import categoryRoutes from "./routes/categoryRoute";
 import module from './routes/moduleRoutes';
 import cartWishlist from './routes/cart&wishlist';
-import handleMidtransWebhook from './routes/midtrans'
+import WebhookRoutes from './routes/midtrans'
 
 import bodyParser from "body-parser";
 
@@ -46,6 +46,6 @@ app.use('/order', purchase);
 app.use("/categories", categoryRoutes);
 app.use('/module', module);
 app.use('/cart-wishlist', cartWishlist);
-app.use('/api', handleMidtransWebhook)
+app.use('/api', WebhookRoutes);
 
 export default app;
