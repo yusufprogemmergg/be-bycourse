@@ -1,7 +1,10 @@
 import app from '../src/app';
+import dotenv from 'dotenv';
+import express from 'express';
+import orderRoutes from './routes/orderRoutes'; // sesuaikan dengan lokasi route
 
+
+dotenv.config();
 export default app;
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server is running on port ${process.env.PORT}`);
-})
+app.use(express.json());

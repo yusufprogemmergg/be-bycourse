@@ -7,24 +7,24 @@ const prisma = new PrismaClient();
 
 
 export const createOrder = async (req: Request, res: Response) => {
-  const userId = req.user?.id
-  const { courseIds } = req.body // [1, 2, 3]
+  const userId = req.user?.id;
+  const { courseIds } = req.body; // contoh: [1, 2, 3]
 
   if (!userId || !Array.isArray(courseIds) || courseIds.length === 0) {
-    res.status(400).json({ message: 'Invalid input' })
+    res.status(400).json({ message: 'Invalid input' });
   }
 
   try {
     const courses = await prisma.course.findMany({
       where: { id: { in: courseIds } },
-    })
+    });
 
     const totalPrice = courses.reduce((acc, course) => {
       const finalPrice = course.discount
         ? course.price - (course.price * course.discount) / 100
-        : course.price
-      return acc + finalPrice
-    }, 0)
+        : course.price;
+      return acc + finalPrice;
+    }, 0);
 
     const order = await prisma.order.create({
       data: {
@@ -34,16 +34,16 @@ export const createOrder = async (req: Request, res: Response) => {
           create: courses.map(course => {
             const finalPrice = course.discount
               ? course.price - (course.price * course.discount) / 100
-              : course.price
+              : course.price;
             return {
               courseId: course.id,
               price: finalPrice,
-            }
+            };
           }),
         },
       },
       include: { orderItems: true },
-    })
+    });
 
     const midtransPayload = {
       transaction_details: {
@@ -53,21 +53,24 @@ export const createOrder = async (req: Request, res: Response) => {
       customer_details: {
         email: req.user.email,
       },
-      credit_card: { secure: true },
-    }
+      credit_card: {
+        secure: true,
+      },
+    };
 
-    const midtransResponse = await snap.createTransaction(midtransPayload)
+    const midtransResponse = await snap.createTransaction(midtransPayload);
 
     res.status(201).json({
       message: 'Order created',
       orderId: order.id,
       redirectUrl: midtransResponse.redirect_url,
-    })
+    });
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Internal server error' })
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
   }
-}
+};
+
 
 
 const snap = new midtransClient.Snap({
