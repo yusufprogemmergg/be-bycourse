@@ -138,6 +138,7 @@ model Order {
   status      String    @default("PENDING") // PENDING | PAID | CANCELLED
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  snapOrderId  String?
 
   user        User      @relation(fields: [userId], references: [id])
   orderItems  OrderItem[]

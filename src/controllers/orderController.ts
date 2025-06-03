@@ -13,13 +13,11 @@ const snap = new midtransClient.Snap({
 });
 
 export const createOrder = async (req: Request, res: Response) => {
-  console.log('SERVER KEY:', process.env.MIDTRANS_SERVER_KEY); // debug sementara
-
   const userId = req.user?.id;
   const { courseIds } = req.body;
 
   if (!userId || !Array.isArray(courseIds) || courseIds.length === 0) {
-    return res.status(400).json({ message: 'Invalid input' });
+    res.status(400).json({ message: 'Invalid input' });return
   }
 
   try {
@@ -52,9 +50,11 @@ export const createOrder = async (req: Request, res: Response) => {
       },
     });
 
+    const midtransOrderId = `ORDER-${order.id}-${Date.now()}`
+
     const transaction = await snap.createTransaction({
       transaction_details: {
-        order_id: `ORDER-${order.id}-${Date.now()}`,
+        order_id: midtransOrderId,
         gross_amount: totalPrice,
       },
       customer_details: {
@@ -62,6 +62,13 @@ export const createOrder = async (req: Request, res: Response) => {
       },
       credit_card: {
         secure: true,
+      },
+    });
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        snapOrderId: midtransOrderId,
       },
     });
 
@@ -75,6 +82,7 @@ export const createOrder = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 export const createMidtransTransaction = async (req: Request, res: Response) => {
   const { orderId, grossAmount, user } = req.body;

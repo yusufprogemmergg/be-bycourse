@@ -56,3 +56,19 @@ export const removeFromCart = async (req: Request, res: Response) => {
   }
 };
 
+export const resetCart = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user.id // diasumsikan kamu pakai middleware auth
+
+    await prisma.cart.deleteMany({
+      where: {
+        userId,
+      },
+    })
+
+    res.status(200).json({ message: 'Cart berhasil dikosongkan setelah checkout.' })
+  } catch (error) {
+    console.error('Reset cart error:', error)
+    res.status(500).json({ message: 'Gagal mengosongkan cart.' })
+  }
+}
