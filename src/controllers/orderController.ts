@@ -1,17 +1,25 @@
-import { Request, Response } from 'express';
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { PrismaClient } from '@prisma/client';
 import midtransClient from 'midtrans-client';
-import crypto from 'crypto';
+import { Request, Response } from 'express';
 
 const prisma = new PrismaClient();
 
+const snap = new midtransClient.Snap({
+  isProduction: false,
+  serverKey: process.env.MIDTRANS_SERVER_KEY!,
+});
 
 export const createOrder = async (req: Request, res: Response) => {
+  console.log('SERVER KEY:', process.env.MIDTRANS_SERVER_KEY); // debug sementara
+
   const userId = req.user?.id;
-  const { courseIds } = req.body; // contoh: [1, 2, 3]
+  const { courseIds } = req.body;
 
   if (!userId || !Array.isArray(courseIds) || courseIds.length === 0) {
-    res.status(400).json({ message: 'Invalid input' });
+    return res.status(400).json({ message: 'Invalid input' });
   }
 
   try {
@@ -42,41 +50,31 @@ export const createOrder = async (req: Request, res: Response) => {
           }),
         },
       },
-      include: { orderItems: true },
     });
 
-    const midtransPayload = {
+    const transaction = await snap.createTransaction({
       transaction_details: {
         order_id: `ORDER-${order.id}-${Date.now()}`,
         gross_amount: totalPrice,
       },
       customer_details: {
-        email: req.user.email,
+        email: req.user?.email,
       },
       credit_card: {
         secure: true,
       },
-    };
-
-    const midtransResponse = await snap.createTransaction(midtransPayload);
+    });
 
     res.status(201).json({
       message: 'Order created',
       orderId: order.id,
-      redirectUrl: midtransResponse.redirect_url,
+      redirectUrl: transaction.redirect_url,
     });
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error('Midtrans error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
-
-
-
-const snap = new midtransClient.Snap({
-  isProduction: false,
-  serverKey: process.env.MIDTRANS_SERVER_KEY!,
-});
 
 export const createMidtransTransaction = async (req: Request, res: Response) => {
   const { orderId, grossAmount, user } = req.body;
