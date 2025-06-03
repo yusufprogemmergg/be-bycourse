@@ -24,6 +24,8 @@ model User {
   Wishlists     Wishlist[]   // Opposite relation for Cart
   orders    Order[]
   purchases Purchase[]  // Opposite relation for Order
+
+  Transaction Transaction[]
 }
 
 model UserProfile {
@@ -60,6 +62,8 @@ model Course {
   Wishlists     Wishlist[]          // Opposite relation for Cart
   orderItems     OrderItem[]         // Opposite relation for OrderItem
   createdAt      DateTime         @default(now())
+
+  Transaction Transaction[]
 }
 
 
@@ -152,6 +156,16 @@ model OrderItem {
 
   order     Order    @relation(fields: [orderId], references: [id])
   course    Course   @relation(fields: [courseId], references: [id])
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  course    Course   @relation(fields: [courseId], references: [id])
+  courseId  Int
+  status    String   // e.g. 'PAID', 'PENDING', 'FAILED'
+  createdAt DateTime @default(now())
 }
 
 model Review {

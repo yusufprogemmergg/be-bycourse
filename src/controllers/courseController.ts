@@ -163,36 +163,62 @@ export const listCourses = async (req: Request, res: Response) => {
   }
 };
 
-// Get Detail Course by ID
+
 export const getCourseById = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params
+  const userId = req.user.Id // asumsikan middleware JWT menyimpan userId di req
 
   try {
     const course = await prisma.course.findUnique({
       where: { id: Number(id) },
       include: {
+        category: true,
         creator: {
           select: { id: true, name: true, email: true },
         },
         reviews: {
-          include: { user: { select: { id: true, name: true } } },
+          include: {
+            user: { select: { id: true, name: true } },
+          },
+        },
+        modules: {
+          include: {
+            lessons: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
         },
       },
-    });
+    })
 
     if (!course) {
-      res.status(404).json({ message: 'Course not found' });
-      return
+      return res.status(404).json({ message: 'Course not found' })
     }
 
-    res.status(200).json({ course });
-    return
+    let isPurchased = false
+    if (userId) {
+      const purchase = await prisma.transaction.findFirst({
+        where: {
+          courseId: Number(id),
+          userId,
+          status: 'PAID',
+        },
+      })
+      isPurchased = !!purchase
+    }
+
+    return res.status(200).json({
+      ...course,
+      isPurchased,
+    })
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-    return
+    console.error('getCourseById error:', error)
+    return res.status(500).json({ message: 'Server error' })
   }
-};
+}
 
 // List courses yang TIDAK dibuat user (buat beli)
 export const getAvailableCourses = async (req: Request, res: Response) => {
