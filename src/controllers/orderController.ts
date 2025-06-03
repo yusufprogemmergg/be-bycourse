@@ -64,7 +64,7 @@ export const createOrder = async (req: Request, res: Response) => {
         secure: true,
       },
       callbacks: {
-      finish: "https://yourdomain.com/thank-you", // <-- GANTI DI SINI
+      finish: "https://fe-bycourse.vercel.app/success", // <-- GANTI DI SINI
   },
     });
 
