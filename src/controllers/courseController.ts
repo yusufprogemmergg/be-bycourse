@@ -195,7 +195,7 @@ export const getCourseById = async (req: Request, res: Response) => {
     })
 
     if (!course) {
-      return res.status(404).json({ message: 'Course not found' })
+      res.status(404).json({ message: 'Course not found' })
     }
 
     let isPurchased = false
@@ -215,13 +215,13 @@ export const getCourseById = async (req: Request, res: Response) => {
     }
 
 
-    return res.status(200).json({
+    res.status(200).json({
       ...course,
       isPurchased,
     })
   } catch (error) {
     console.error('getCourseById error:', error)
-    return res.status(500).json({ message: 'Server error' })
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
