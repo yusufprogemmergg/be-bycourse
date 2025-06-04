@@ -147,7 +147,7 @@ export const activateUser = async (req: Request, res: Response) => {
   
       res.send(`
         <h1>Account Activated Successfully</h1>
-        <p>You can now <a href="/login">Login</a>.</p>
+        <p>You can now <a href="https://fe-bycourse.vercel.app/login">Login</a>.</p>
       `);
     
     } catch (error) {
