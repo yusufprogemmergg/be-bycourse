@@ -19,11 +19,12 @@ export const createOrder = async (req: Request, res: Response) => {
   const { courseIds } = req.body;
 
   if (!userId || !Array.isArray(courseIds) || courseIds.length === 0) {
-     res.status(400).json({ message: 'Invalid input' });return
+    res.status(400).json({ message: 'Invalid input' });
+    return;
   }
 
   try {
-    // 1. Cek course yang sudah dibeli (dari order yang status-nya PAID)
+    // 1. Cek course yang sudah dibeli
     const paidOrders = await prisma.order.findMany({
       where: {
         userId,
@@ -48,21 +49,22 @@ export const createOrder = async (req: Request, res: Response) => {
     const newCourseIds = courseIds.filter(id => !alreadyBoughtCourseIds.has(id));
 
     if (newCourseIds.length === 0) {
-       res.status(400).json({ message: 'Semua course sudah dibeli' });return
+      res.status(400).json({ message: 'Semua course sudah dibeli' });
+      return;
     }
 
-    // 2. Ambil detail course yang valid
+    // 2. Ambil detail course
     const courses = await prisma.course.findMany({
       where: { id: { in: newCourseIds } },
     });
 
-    // 3. Hitung total harga
-    const totalPrice = courses.reduce((acc, course) => {
+    // 3. Hitung total harga (pastikan integer)
+    const totalPrice = Math.round(courses.reduce((acc, course) => {
       const finalPrice = course.discount
         ? course.price - (course.price * course.discount) / 100
         : course.price;
       return acc + finalPrice;
-    }, 0);
+    }, 0));
 
     // 4. Buat order
     const order = await prisma.order.create({
@@ -76,7 +78,7 @@ export const createOrder = async (req: Request, res: Response) => {
               : course.price;
             return {
               courseId: course.id,
-              price: finalPrice,
+              price: Math.round(finalPrice), // pastikan juga di sini integer
             };
           }),
         },
@@ -89,7 +91,7 @@ export const createOrder = async (req: Request, res: Response) => {
     const transaction = await snap.createTransaction({
       transaction_details: {
         order_id: midtransOrderId,
-        gross_amount: totalPrice,
+        gross_amount: totalPrice, // sekarang pasti integer
       },
       customer_details: {
         email: req.user?.email,
@@ -102,7 +104,7 @@ export const createOrder = async (req: Request, res: Response) => {
       },
     });
 
-    // 6. Simpan ID transaksi Midtrans
+    // 6. Simpan snapOrderId
     await prisma.order.update({
       where: { id: order.id },
       data: {
@@ -122,6 +124,7 @@ export const createOrder = async (req: Request, res: Response) => {
 };
 
 
+
 export const createMidtransTransaction = async (req: Request, res: Response) => {
   const { orderId, grossAmount, user } = req.body;
 
@@ -129,7 +132,7 @@ export const createMidtransTransaction = async (req: Request, res: Response) => 
     const parameter = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: grossAmount,
+        gross_amount: Math.round(grossAmount), // tambahkan pembulatan di sini juga
       },
       customer_details: {
         first_name: user.name,
@@ -144,6 +147,7 @@ export const createMidtransTransaction = async (req: Request, res: Response) => 
     res.status(500).json({ message: 'Gagal membuat transaksi Midtrans' });
   }
 };
+
 
 export const midtransWebhook = async (req: Request, res: Response) => {
   try {
