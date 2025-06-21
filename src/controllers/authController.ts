@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { sendEmail } from '../libs/email';
 import { profile } from 'console';
+import supabase from "../utils/supabaseClient"; // Pastikan path benar
+
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
@@ -152,9 +154,77 @@ export const activateUser = async (req: Request, res: Response) => {
     
     } catch (error) {
       console.error('Error during activation:', error);
-       res.status(500).send(`
+      res.status(500).send(`
         <h1>Server Error</h1>
         <p>Please try again later.</p>
       `);
     }
   };
+
+  // GET /auth/oauth/google
+export const loginWithGoogle = async (req: Request, res: Response) => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${process.env.BASE_URL}/auth/oauth/callback`,
+    },
+  });
+
+  if (error) {
+    res.status(500).json({ message: 'Failed to redirect to Google', error });return
+  }
+
+  res.redirect(data.url); // redirect ke Google login
+};
+
+
+// GET /auth/oauth/callback
+export const oauthCallback = async (req: Request, res: Response) => {
+  try {
+    // Ambil session dari Supabase (pakai cookie atau token dari query/headers)
+    const { data, error } = await supabase.auth.getUser(req.headers.authorization?.replace('Bearer ', '') || '');
+
+    if (error || !data?.user) {
+      res.status(400).send('Gagal mengambil data user dari Supabase'); return;
+    }
+
+    const userSupabase = data.user;
+
+    // Cari user di database kita
+    let user = await prisma.user.findUnique({
+      where: { email: userSupabase.email! },
+    });
+
+    // Jika belum ada, buat user baru
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name: userSupabase.user_metadata?.full_name || userSupabase.email!,
+          username: generateUsername(userSupabase.email!), // kamu bisa buat random generator
+          email: userSupabase.email!,
+          isActive: true,
+          googleId: userSupabase.id,
+        },
+      });
+    }
+
+    // Generate JWT lokal (untuk aplikasi kamu)
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Redirect ke FE dengan token JWT (atau simpan ke cookie)
+    return res.redirect(`https://fe-bycourse.vercel.app/oauth?token=${token}`);
+  } catch (error) {
+    console.error('OAuth Callback Error:', error);
+    res.status(500).send('Server Error');
+  }
+};
+
+// Util sederhana
+function generateUsername(email: string) {
+  return email.split('@')[0] + '-' + Math.floor(Math.random() * 10000);
+}
+
