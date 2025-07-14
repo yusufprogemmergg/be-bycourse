@@ -7,6 +7,6 @@ router.post('/register', register);
 router.post('/login', login);
 router.get('/activate/:token', activateUser);
 router.get('/oauth/google', loginWithGoogle);        // Redirect to Google
-router.get('/oauth/callback', oauthCallback);
+router.post('/oauth/callback', oauthCallback);
 
 export default router;
