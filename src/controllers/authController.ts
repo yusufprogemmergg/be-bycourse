@@ -9,7 +9,7 @@ import supabase from "../utils/supabaseClient"; // Pastikan path benar
 
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+const JWT_SECRET = process.env.JWT_SECRET || 'bycourse-secret';
 
 export const register = async (req: Request, res: Response) => {
     const { name, username, email, password, passwordConfirm } = req.body;
@@ -179,31 +179,33 @@ export const loginWithGoogle = async (req: Request, res: Response) => {
 
 
 // GET /auth/oauth/callback
+function generateUsername(email: string) {
+  return email.split('@')[0] + '-' + Math.floor(Math.random() * 10000)
+}
+
 export const oauthCallback = async (req: Request, res: Response) => {
   try {
-    // Ambil token dari URL query (Supabase kirim ini saat redirect)
-    const { access_token, refresh_token } = req.query;
+    const { access_token } = req.body
 
-    if (!access_token) {
-      res.status(400).send('Access token tidak ditemukan di query');return
+    if (!access_token || typeof access_token !== 'string') {
+      res.status(400).json({ message: 'Access token tidak ditemukan' })
     }
 
     // Ambil user dari Supabase
-    const { data, error } = await supabase.auth.getUser(access_token as string);
+    const { data, error } = await supabase.auth.getUser(access_token)
 
     if (error || !data?.user) {
-      res.status(400).send('Gagal mengambil data user dari Supabase');
-      return;
+      res.status(400).json({ message: 'Gagal ambil user Supabase', error }); return
     }
 
-    const userSupabase = data.user;
+    const userSupabase = data.user
 
-    // Cari user di database kita
+    // Cek user di database Prisma
     let user = await prisma.user.findUnique({
       where: { email: userSupabase.email! },
-    });
+    })
 
-    // Jika belum ada, buat user baru
+    // Jika belum ada → buat baru
     if (!user) {
       user = await prisma.user.create({
         data: {
@@ -213,27 +215,23 @@ export const oauthCallback = async (req: Request, res: Response) => {
           isActive: true,
           googleId: userSupabase.id,
         },
-      });
+      })
     }
 
-    // Generate JWT lokal
+    // Buat JWT lokal untuk aplikasi kamu
     const token = jwt.sign(
-      { id: user.id, email: user.email },
+      {
+        id: user.id,
+        email: user.email,
+      },
       JWT_SECRET,
       { expiresIn: '1h' }
-    );
+    )
 
-    // Redirect ke FE dengan token
-    return res.redirect(`https://fe-bycourse.vercel.app/oauth?token=${token}`);
-  } catch (error) {
-    console.error('OAuth Callback Error:', error);
-    res.status(500).send('Server Error');
+    // Kirim ke frontend
+    res.json({ token })
+  } catch (err) {
+    console.error('OAuth Callback Error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
-
-
-// Util sederhana
-function generateUsername(email: string) {
-  return email.split('@')[0] + '-' + Math.floor(Math.random() * 10000);
-}
-
