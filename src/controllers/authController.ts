@@ -188,24 +188,24 @@ export const oauthCallback = async (req: Request, res: Response) => {
     const { access_token } = req.body
 
     if (!access_token || typeof access_token !== 'string') {
-      res.status(400).json({ message: 'Access token tidak ditemukan' })
+      res.status(400).json({ message: 'Access token tidak ditemukan' });return
     }
 
-    // Ambil user dari Supabase
+    // Ambil user Supabase pakai token
     const { data, error } = await supabase.auth.getUser(access_token)
 
     if (error || !data?.user) {
-      res.status(400).json({ message: 'Gagal ambil user Supabase', error }); return
+      res.status(400).json({ message: 'Gagal ambil user Supabase', error });return
     }
 
     const userSupabase = data.user
 
-    // Cek user di database Prisma
+    // Cari user di database lokal
     let user = await prisma.user.findUnique({
       where: { email: userSupabase.email! },
     })
 
-    // Jika belum ada → buat baru
+    // Jika belum ada → buat user baru
     if (!user) {
       user = await prisma.user.create({
         data: {
@@ -214,11 +214,19 @@ export const oauthCallback = async (req: Request, res: Response) => {
           email: userSupabase.email!,
           isActive: true,
           googleId: userSupabase.id,
+
+          // Tambahkan ini jika kamu pakai relasi profileId dan profile nullable
+          // Kalau tidak, abaikan saja (tidak perlu profileId)
+          // profile: {
+          //   create: {
+          //     bio: '', // atau isi default
+          //   },
+          // },
         },
       })
     }
 
-    // Buat JWT lokal untuk aplikasi kamu
+    // Buat JWT lokal
     const token = jwt.sign(
       {
         id: user.id,
@@ -228,10 +236,10 @@ export const oauthCallback = async (req: Request, res: Response) => {
       { expiresIn: '1h' }
     )
 
-    // Kirim ke frontend
+    // Kirim token ke frontend
     res.json({ token })
   } catch (err) {
     console.error('OAuth Callback Error:', err)
-    res.status(500).json({ message: 'Server error' })
+    res.status(500).json({ message: 'Server error', err })
   }
 }
