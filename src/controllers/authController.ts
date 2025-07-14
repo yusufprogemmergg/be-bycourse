@@ -166,7 +166,7 @@ export const loginWithGoogle = async (req: Request, res: Response) => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.BASE_URL}/auth/oauth/callback`,
+      redirectTo: `redirectTo: https://fe-bycourse.vercel.app/oauth-callback`,
     },
   });
 
