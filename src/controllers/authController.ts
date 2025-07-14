@@ -181,11 +181,19 @@ export const loginWithGoogle = async (req: Request, res: Response) => {
 // GET /auth/oauth/callback
 export const oauthCallback = async (req: Request, res: Response) => {
   try {
-    // Ambil session dari Supabase (pakai cookie atau token dari query/headers)
-    const { data, error } = await supabase.auth.getUser(req.headers.authorization?.replace('Bearer ', '') || '');
+    // Ambil token dari URL query (Supabase kirim ini saat redirect)
+    const { access_token, refresh_token } = req.query;
+
+    if (!access_token) {
+      res.status(400).send('Access token tidak ditemukan di query');return
+    }
+
+    // Ambil user dari Supabase
+    const { data, error } = await supabase.auth.getUser(access_token as string);
 
     if (error || !data?.user) {
-      res.status(400).send('Gagal mengambil data user dari Supabase'); return;
+      res.status(400).send('Gagal mengambil data user dari Supabase');
+      return;
     }
 
     const userSupabase = data.user;
@@ -200,7 +208,7 @@ export const oauthCallback = async (req: Request, res: Response) => {
       user = await prisma.user.create({
         data: {
           name: userSupabase.user_metadata?.full_name || userSupabase.email!,
-          username: generateUsername(userSupabase.email!), // kamu bisa buat random generator
+          username: generateUsername(userSupabase.email!),
           email: userSupabase.email!,
           isActive: true,
           googleId: userSupabase.id,
@@ -208,20 +216,21 @@ export const oauthCallback = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate JWT lokal (untuk aplikasi kamu)
+    // Generate JWT lokal
     const token = jwt.sign(
       { id: user.id, email: user.email },
       JWT_SECRET,
       { expiresIn: '1h' }
     );
 
-    // Redirect ke FE dengan token JWT (atau simpan ke cookie)
+    // Redirect ke FE dengan token
     return res.redirect(`https://fe-bycourse.vercel.app/oauth?token=${token}`);
   } catch (error) {
     console.error('OAuth Callback Error:', error);
     res.status(500).send('Server Error');
   }
-};
+}
+
 
 // Util sederhana
 function generateUsername(email: string) {

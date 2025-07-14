@@ -10,11 +10,11 @@ generator client {
 model User {
   id        Int      @id @default(autoincrement())
   name      String
-  username  String   @unique
+  username  String?  @unique
   email     String   @unique
-  password  String?  // opsional untuk user Google
+  password  String?  // Kosong untuk Google login
   googleId  String?  @unique
-  isActive  Boolean  @default(false)
+  isActive  Boolean  @default(true)
   activationToken String?
   profile   UserProfile?
   profileId Int?
