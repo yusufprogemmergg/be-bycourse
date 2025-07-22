@@ -10,10 +10,10 @@ const storage = multer.diskStorage({
   },
 });
 
-// ⚠️ Tambahkan batas ukuran file, misal max 100MB (supabase biasanya max 50MB)
 export const upload = multer({
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 100MB
+
+    fileSize: 1024 * 1024 * 1024, // 100MB
   },
 });
