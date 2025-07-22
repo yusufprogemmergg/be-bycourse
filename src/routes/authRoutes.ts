@@ -3,7 +3,7 @@ import { loginWithGoogle, sendMagicLink ,oauthCallback } from '../controllers/au
 
 const router = express.Router();
 
-router.get('/oauth/google', loginWithGoogle);
+router.post('/oauth/google', loginWithGoogle);
 router.post('/magiclink', sendMagicLink);        // Redirect to Google
 router.post('/oauth/callback', oauthCallback);
 
