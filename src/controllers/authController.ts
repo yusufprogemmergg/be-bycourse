@@ -10,22 +10,23 @@ function generateUsername(email: string) {
   return email.split("@")[0] + "-" + Math.floor(Math.random() * 10000);
 }
 
-// ======== Google Login ========
-export const loginWithGoogle = async (req: Request, res: Response) => {
+export const handleGoogleLogin = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
+    provider: 'google',
     options: {
-      redirectTo: `https://fe-bycourse.vercel.app/oauth-callback`,
+      redirectTo: 'https://fe-bycourse.vercel.app/oauth-callback',
     },
-  });
+  })
 
   if (error) {
-    res.status(500).json({ message: "Gagal redirect ke Google", error });
-    return;
+    alert('Gagal login dengan Google')
+    console.error(error)
+  } else {
+    // Redirect dilakukan otomatis oleh Supabase melalui data.url
+    window.location.href = data.url
   }
+}
 
-  res.redirect(data.url);
-};
 
 // ======== Magic Link Login ========
 export const sendMagicLink = async (req: Request, res: Response) => {
