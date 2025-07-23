@@ -22,10 +22,11 @@ export const handleGoogleLogin = async () => {
     alert('Gagal login dengan Google')
     console.error(error)
   } else {
-    // Redirect dilakukan otomatis oleh Supabase melalui data.url
+    // redirect otomatis jika berhasil
     window.location.href = data.url
   }
 }
+
 
 
 // ======== Magic Link Login ========
