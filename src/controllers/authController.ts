@@ -48,49 +48,39 @@ export const sendMagicLink = async (req: Request, res: Response) => {
 };
 
 // ======== Callback ========
-export const oauthOrMagicCallback = async (req: Request, res: Response) => {
-  try {
-    const { access_token } = req.body;
+export const oauthCallback = async (req: Request, res: Response) => {
+  const { access_token } = req.body
 
-    if (!access_token || typeof access_token !== "string") {
-      res.status(400).json({ message: "Access token tidak ditemukan" });
-      return;
-    }
-
-    const { data, error } = await supabase.auth.getUser(access_token);
-
-    if (error || !data?.user) {
-      res.status(400).json({ message: "Gagal ambil user Supabase", error });
-      return;
-    }
-
-    const userSupabase = data.user;
-
-    let user = await prisma.user.findUnique({
-      where: { email: userSupabase.email! },
-    });
-
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          name: userSupabase.user_metadata?.full_name || userSupabase.email!,
-          username: generateUsername(userSupabase.email!),
-          email: userSupabase.email!,
-          isActive: true,
-          googleId: userSupabase.id,
-        },
-      });
-    }
-
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    res.json({ token });
-  } catch (err) {
-    console.error("Callback Error:", err);
-    res.status(500).json({ message: "Server error", err });
+  if (!access_token) {
+     res.status(400).json({ message: 'Token tidak ditemukan' });return
   }
-};
+
+  try {
+    const { data: userInfo, error } = await supabase.auth.getUser(access_token)
+
+    if (error || !userInfo?.user?.email) {
+      console.error('Gagal ambil user:', error)
+       res.status(401).json({ message: 'Token tidak valid' });return
+    }
+
+    const user = userInfo.user
+
+    // Simpan user ke database kamu kalau perlu
+    // const existingUser = await prisma.user.upsert(...)
+
+    // Buat JWT lokal
+    const jwtToken = jwt.sign(
+      { 
+        id: user.id,
+        email: user.email,
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    )
+
+     res.json({ token: jwtToken })
+  } catch (err) {
+    console.error('Internal error:', err)
+     res.status(500).json({ message: 'Internal Server Error' })
+  }
+}
